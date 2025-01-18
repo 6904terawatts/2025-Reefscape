@@ -16,12 +16,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.SwerveModule;
 
-public class Swerve extends SubsystemBase {
+public class Swerve extends Subsystem {
     public SwerveDriveOdometry swerveOdometry;
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
 
-    public Swerve() {
+    private Swerve() {
+        super("swerve");
+
         gyro = new Pigeon2(Constants.Swerve.pigeonID);
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         gyro.setYaw(0);
@@ -103,7 +105,7 @@ public class Swerve extends SubsystemBase {
     }
 
     public Rotation2d getGyroYaw() {
-        return Rotation2d.fromDegrees(gyro.getYaw().getValue());
+        return Rotation2d.fromDegrees(gyro.getYaw().getValueAsDouble());
     }
 
     public void resetModulesToAbsolute(){
@@ -122,4 +124,39 @@ public class Swerve extends SubsystemBase {
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Velocity", mod.getState().speedMetersPerSecond);    
         }
     }
+
+    public static Swerve mInstance;
+
+    public static Swerve getInstance() {
+        if (mInstance == null) {
+          mInstance = new Swerve();
+        }
+        return mInstance;
+      }
+
+    @Override
+    public void reset() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'reset'");
+    }
+
+    @Override
+    public void writePeriodicOutputs() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'writePeriodicOutputs'");
+    }
+
+    @Override
+    public void stop() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'stop'");
+    }
+
+    @Override
+    public void outputTelemetry() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'outputTelemetry'");
+    }
+
+    
 }

@@ -4,9 +4,33 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj2.command.Command;
+import static edu.wpi.first.units.Units.Rotation;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import frc.robot.subsystems.Swerve;
+import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.controls.controllers.DriverController;
+import frc.robot.controls.controllers.OperatorController;
+import frc.robot.simulation.Field;
+import frc.robot.subsystems.Algae;
+import frc.robot.subsystems.Coral;
+import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.Subsystem;
+import frc.robot.subsystems.leds.LEDs;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -14,84 +38,285 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   public static final CTREConfigs ctreConfigs = new CTREConfigs();
 
-  private Command m_autonomousCommand;
+  private final DriverController m_driverController = new DriverController(0, true, true);
+  private final OperatorController m_operatorController = new OperatorController(1, true, true);
+  private final GenericHID sysIdController = new GenericHID(2);
 
-  private RobotContainer m_robotContainer;
+  private final SlewRateLimiter m_speedLimiter = new SlewRateLimiter(Constants.Swerve.maxSpeed);
+  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(Math.PI * 8);
+
+  // Robot subsystems
+  private List<Subsystem> m_allSubsystems = new ArrayList<>();
+  // private final Intake m_intake = Intake.getInstance();
+  private final Swerve m_drive = Swerve.getInstance();
+  private final Coral m_coral = Coral.getInstance();
+  private final Algae m_algae = Algae.getInstance();
+  // private final Shooter m_shooter = Shooter.getInstance();
+  private final Elevator m_elevator = Elevator.getInstance();
+
+  public final LEDs m_leds = LEDs.getInstance();
+
+  
+  // Simulation stuff
+  private final Field m_field = Field.getInstance();
 
   /**
-   * This function is run when the robot is first started up and should be used for any
-   * initialization code.
+   * This function is run when the robot is first started up.
    */
   @Override
   public void robotInit() {
-    // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
-    // autonomous chooser on the dashboard.
-    m_robotContainer = new RobotContainer();
+    setupLogging();
+
+    // Add all subsystems to the list
+    // m_allSubsystems.add(m_compressor);
+    m_allSubsystems.add(m_drive);
+    m_allSubsystems.add(m_coral);
+    m_allSubsystems.add(m_algae);
+    m_allSubsystems.add(m_elevator);
+
+    m_allSubsystems.add(m_leds);
+
+    // Set up the Field2d object for simulation
+    SmartDashboard.putData("Field", m_field);
   }
 
-  /**
-   * This function is called every robot packet, no matter the mode. Use this for items like
-   * diagnostics that you want ran during disabled, autonomous, teleoperated and test.
-   *
-   * <p>This runs after the mode specific periodic functions, but before LiveWindow and
-   * SmartDashboard integrated updating.
-   */
   @Override
   public void robotPeriodic() {
-    // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
-    // commands, running already-scheduled commands, removing finished or interrupted commands,
-    // and running subsystem periodic() methods.  This must be called from the robot's periodic
-    // block in order for anything in the Command-based framework to work.
-    CommandScheduler.getInstance().run();
-  }
+    m_allSubsystems.forEach(subsystem -> subsystem.periodic());
+    m_allSubsystems.forEach(subsystem -> subsystem.writePeriodicOutputs());
+    m_allSubsystems.forEach(subsystem -> subsystem.outputTelemetry());
+    m_allSubsystems.forEach(subsystem -> subsystem.writeToLog());
 
-  /** This function is called once each time the robot enters Disabled mode. */
-  @Override
-  public void disabledInit() {}
+    updateSim();
 
-  @Override
-  public void disabledPeriodic() {}
-
-  /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
-  @Override
-  public void autonomousInit() {
-    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
-
-    // schedule the autonomous command (example)
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.schedule();
+    // Used by sysid
+    if (this.isTestEnabled()) {
+      CommandScheduler.getInstance().run();
     }
   }
 
-  /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousInit() {
+   
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+   
+  }
 
   @Override
   public void teleopInit() {
-    // This makes sure that the autonomous stops running when
-    // teleop starts running. If you want the autonomous to
-    // continue until interrupted by another command, remove
-    // this line or comment it out.
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
-    }
+    m_leds.breathe();
   }
 
-  /** This function is called periodically during operator control. */
+  double speed = 0;
+
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    // Get the x speed. We are inverting this because Xbox controllers return
+    // negative values when we push forward.
+    double maxSpeed = m_driverController.getWantsSpeedMode() ? Constants.Swerve.maxSpeed : Constants.Swerve.maxSpeed;
+    double xSpeed = m_speedLimiter.calculate(m_driverController.getForwardAxis() * maxSpeed);
+
+    // Get the rate of angular rotation. We are inverting this because we want a
+    // positive value when we pull to the left (remember, CCW is positive in
+    // mathematics). Xbox controllers return positive values when you pull to
+    // the right by default.
+
+    // m_drive.slowMode(m_driverController.getWantsSlowMode());
+    // m_drive.speedMode(m_driverController.getWantsSpeedMode());
+    double rot = m_rotLimiter.calculate(m_driverController.getTurnAxis() * Constants.Swerve.maxAngularVelocity);
+
+    
+
+    // FINAL CONTROLS
+    if (m_driverController.getWantsStow()) {
+      m_elevator.goToElevatorStow();
+      // m_algae.stow();
+    } else if (m_driverController.getWantsL2()) {
+      m_elevator.goToElevatorL2();
+      m_algae.stow();
+    } else if (m_driverController.getWantsL3()) {
+      m_elevator.goToElevatorL3();
+      m_algae.stow();
+    } else if (m_driverController.getWantsL4()) {
+      m_elevator.goToElevatorL4();
+      m_algae.stow();
+    } else if (m_driverController.getWantsA1()) {
+      m_elevator.goToAlgaeLow();
+      m_algae.grabAlgae();
+    } else if (m_driverController.getWantsA2()) {
+      m_elevator.goToAlgaeHigh();
+      m_algae.grabAlgae();
+    } else if (m_driverController.getWantsStopAlgae()) {
+      m_algae.stopAlgae();
+    } else if (m_driverController.getWantsEjectAlgae()) {
+      m_algae.score();
+    } else if (m_driverController.getWantsGroundAlgae()) {
+      m_algae.groundIntake();
+    }
+
+    if (m_driverController.getWantsScoreCoral()) {
+      if (m_elevator.getState() == Elevator.ElevatorState.STOW) {
+        m_coral.scoreL1();
+      } else {
+        m_coral.scoreL24();
+      }
+    } else if (m_driverController.getWantsIntakeCoral()) {
+      m_coral.intake();
+      m_elevator.goToElevatorStow();
+    }
+
+    // ALGAE
+    // if (m_driverController.getWantsAlgaeStow()) {
+    // m_algae.stow();
+    // } else if (m_driverController.getWantsAlgaeGrab()) {
+    // m_algae.grabAlgae();
+    // } else if (m_driverController.getWantsAlgaeScore()) {
+    // m_algae.score();
+    // } else if (m_driverController.getWantsAlgaeGroundIntake()) {
+    // m_algae.groundIntake();
+    // }
+
+    // ELEVATOR
+    // m_elevator.setElevatorPower(m_operatorController.getElevatorAxis());
+    // if (m_operatorController.getWantsElevatorStow()) {
+    // m_elevator.goToElevatorStow();
+    // } else if (m_operatorController.getWantsElevatorL2()) {
+    // m_elevator.goToElevatorL2();
+    // } else if (m_operatorController.getWantsElevatorL3()) {
+    // m_elevator.goToElevatorL3();
+    // } else if (m_operatorController.getWantsElevatorL4()) {
+    // m_elevator.goToElevatorL4();
+    // }
+
+    // CORAL
+    // if (m_operatorController.getWantsCoralIntake()) {
+    // m_coral.intake();
+    // } else if (m_operatorController.getWantsCoralReverse()) {
+    // m_coral.reverse();
+    // } else if (m_operatorController.getWantsCoralIndex()) {
+    // m_coral.index();
+    // } else if (m_operatorController.getWantsCoralL1()) {
+    // m_coral.scoreL1();
+    // } else if (m_operatorController.getWantsCoralL24()) {
+    // m_coral.scoreL24();
+    // } else {
+    // m_coral.stopCoral();
+    // }
+
+    if (m_operatorController.getWantsElevatorReset() || m_driverController.getWantsElevatorReset()) {
+      
+      m_elevator.reset();
+    }
+
+    // // Intake
+    // if (m_driverController.getWantsFullIntake()) {
+    // m_intake.goToGround();
+    // } else if (m_driverController.getWantsIntake()) {
+    // if (m_intake.getIntakeHasNote()) {
+    // m_intake.pulse();
+    // } else {
+    // m_intake.intake();
+    // }
+    // } else if (m_driverController.getWantsEject()) {
+    // m_intake.eject();
+    // } else if (m_driverController.getWantsSource()) {
+    // m_intake.goToSource();
+    // } else if (m_driverController.getWantsStow()) {
+    // m_intake.goToStow();
+    // } else if (m_intake.getIntakeState() != IntakeState.INTAKE) {
+    // m_intake.stopIntake();
+    // }
+
+    // // Climber
+    // if (m_operatorController.getWantsClimberClimb()) {
+    // m_climber.climb();
+    // } else if (m_operatorController.getWantsClimberRelease()) {
+    // m_climber.release();
+    // } else if (m_operatorController.getWantsClimberTiltLeft()) {
+    // m_climber.tiltLeft();
+    // } else if (m_operatorController.getWantsClimberTiltRight()) {
+    // m_climber.tiltRight();
+    // } else {
+    // m_climber.stopClimber();
+    // }
+
+    // if (m_operatorController.getWantsBrakeMode()) {
+    // m_climber.setBrakeMode();
+    // } else if (m_operatorController.getWantsCoastMode()) {
+    // m_climber.setCoastMode();
+    // }
+  }
+
+  @Override
+  public void disabledInit() {
+    // m_leds.rainbow();
+    m_leds.setColor(Color.kRed);
+
+    speed = 0;
+    m_allSubsystems.forEach(subsystem -> subsystem.stop());
+
+    // TODO: reset the auto state stuff if we're in dev mode
+  }
+
+  @Override
+  public void disabledPeriodic() {
+  }
+
+  @Override
+  public void disabledExit() {
+  }
 
   @Override
   public void testInit() {
-    // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
   }
 
-  /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+ 
+  }
+
+  @Override
+  public void simulationInit() {
+  }
+
+  @Override
+  public void simulationPeriodic() {
+  }
+
+  private void updateSim() {
+    // Update the odometry in the sim.
+    m_field.setRobotPose(m_drive.getPose());
+  }
+
+  @SuppressWarnings("resource")
+  private void setupLogging() {
+    Logger.recordMetadata("ProjectName", "Flipside"); // Set a metadata value
+
+    if (isReal()) {
+      new WPILOGWriter(); // Log to the RoboRIO
+
+      // TODO: Add the next line back with a USB stick
+      // Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+      Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+      new PowerDistribution(1, ModuleType.kCTRE); // Enables power distribution logging
+    }
+    // else {
+    // setUseTiming(false); // Run as fast as possible
+    // String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from
+    // AdvantageScope (or prompt the user)
+    // Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+    // Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath,
+    // "_sim"))); // Save outputs to a new log
+    // }
+
+    Logger.start();
+  }
 }
+
