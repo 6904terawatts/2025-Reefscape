@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Rotation;
@@ -28,6 +24,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.autonomous.AutoRunner;
 import frc.robot.controls.controllers.DriverController;
 import frc.robot.controls.controllers.OperatorController;
 import frc.robot.simulation.Field;
@@ -43,28 +40,28 @@ import frc.robot.subsystems.leds.LEDs;
  * project.
  */
 public class Robot extends LoggedRobot {
-  public static final CTREConfigs ctreConfigs = new CTREConfigs();
-  private final Swerve s_Swerve = new Swerve();
-  private final DriverController m_driverController = new DriverController(0, true, true);
-  private final OperatorController m_operatorController = new OperatorController(1, true, true);
-  private final GenericHID sysIdController = new GenericHID(2);
+    public static final CTREConfigs ctreConfigs = new CTREConfigs();
+    private final Swerve s_Swerve = new Swerve();
+    private final DriverController m_driverController = new DriverController(0, true, true);
+    private final OperatorController m_operatorController = new OperatorController(1, true, true);
+    private final GenericHID sysIdController = new GenericHID(2);
 
-  private final SlewRateLimiter m_speedLimiter = new SlewRateLimiter(Constants.Swerve.maxSpeed);
-  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(Math.PI * 8);
+    private final SlewRateLimiter m_speedLimiter = new SlewRateLimiter(Constants.Swerve.maxSpeed);
+    private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(Math.PI * 8);
 
-  // Robot subsystems
-  private List<Subsystem> m_allSubsystems = new ArrayList<>();
+    // Robot subsystems
+    private List<Subsystem> m_allSubsystems = new ArrayList<>();
   // private final Intake m_intake = Intake.getInstance();
-  private final Swerve m_drive = Swerve.getInstance();
-  private final Coral m_coral = Coral.getInstance();
+    private final Swerve m_drive = Swerve.getInstance();
+    private final Coral m_coral = Coral.getInstance();
   // private final Algae m_algae = Algae.getInstance();
   // private final Shooter m_shooter = Shooter.getInstance();
-  private final Elevator m_elevator = Elevator.getInstance();
+    private final Elevator m_elevator = Elevator.getInstance();
 
-  public final LEDs m_leds = LEDs.getInstance();
+    public final LEDs m_leds = LEDs.getInstance();
 
   // Simulation stuff
-  private final Field m_field = Field.getInstance();
+    private final Field m_field = Field.getInstance();
 
   private void initializeSubSystems() {
     // Drivetrain will execute this command periodically
@@ -82,65 +79,74 @@ public class Robot extends LoggedRobot {
   /**
    * This function is run when the robot is first started up.
    */
-  @Override
-  public void robotInit() {
-    TalonFX testMotor = new TalonFX(60, "TEST");
-    Timer.delay(1);
-    setupLogging();
+    @Override
+    public void robotInit() {
+        TalonFX testMotor = new TalonFX(60, "TEST");
+        Timer.delay(1);
+        setupLogging();
 
     // Add all subsystems to the list
     // m_allSubsystems.add(m_compressor);
-    m_allSubsystems.add(m_drive);
-    m_allSubsystems.add(m_coral);
+        m_allSubsystems.add(m_drive);
+        m_allSubsystems.add(m_coral);
     // m_allSubsystems.add(m_algae);
-    m_allSubsystems.add(m_elevator);
+        m_allSubsystems.add(m_elevator);
 
-    m_allSubsystems.add(m_leds);
+        m_allSubsystems.add(m_leds);
 
     // Set up the Field2d object for simulation
-    SmartDashboard.putData("Field", m_field);
+        SmartDashboard.putData("Field", m_field);
 
-    // Initialize subsystems
-    initializeSubSystems();
-  }
+        // Initialize subsystems
+    
+    }
 
-  @Override
-  public void robotPeriodic() {
-    m_allSubsystems.forEach(subsystem -> subsystem.periodic());
-    m_allSubsystems.forEach(subsystem -> subsystem.writePeriodicOutputs());
-    m_allSubsystems.forEach(subsystem -> subsystem.outputTelemetry());
-    m_allSubsystems.forEach(subsystem -> subsystem.writeToLog());
+    @Override
+    public void robotPeriodic() {
+        m_allSubsystems.forEach(subsystem -> subsystem.periodic());
+        m_allSubsystems.forEach(subsystem -> subsystem.writePeriodicOutputs());
+        m_allSubsystems.forEach(subsystem -> subsystem.outputTelemetry());
+        m_allSubsystems.forEach(subsystem -> subsystem.writeToLog());
 
-    updateSim();
+        updateSim();
 
     // Used by sysid
-    if (this.isTestEnabled()) {
-      CommandScheduler.getInstance().run();
+        if (this.isTestEnabled()) {
+            CommandScheduler.getInstance().run();
 
 
       
+        }
     }
-  }
 
-  @Override
-  public void autonomousInit() {
-   
-  }
+    @Override
+    public void autonomousInit() {
+        m_autonomousCommand = m_autoRunner.getNextTask();
+        
+        if (m_autonomousCommand != null) {
+            m_autonomousCommand.schedule();
+        }
+    }
 
-  @Override
-  public void autonomousPeriodic() {
-   
-  }
+    @Override
+    public void autonomousPeriodic() {
+        if (m_autonomousCommand != null && m_autonomousCommand.isFinished()) {
+            m_autonomousCommand = m_autoRunner.getNextTask();
+            if (m_autonomousCommand != null) {
+                m_autonomousCommand.schedule();
+            }
+        }
+    }
 
-  @Override
-  public void teleopInit() {
-    m_leds.breathe();
-  }
+    @Override
+    public void teleopInit() {
+        m_leds.breathe();
+    }
 
   double speed = 0;
 
-  @Override
-  public void teleopPeriodic() {
+    @Override
+    public void teleopPeriodic() {
     // Get the x speed. We are inverting this because Xbox controllers return
     // negative values when we push forward.
     double maxSpeed = m_driverController.getWantsSpeedMode() ? Constants.Swerve.maxSpeed : Constants.Swerve.maxSpeed;
@@ -213,12 +219,12 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void disabledExit() {
-  }
+    }
 
-  @Override
-  public void testInit() {
-    CommandScheduler.getInstance().cancelAll();
-  }
+    @Override
+    public void testInit() {
+        CommandScheduler.getInstance().cancelAll();
+    }
 
   @Override
   public void testPeriodic() {
