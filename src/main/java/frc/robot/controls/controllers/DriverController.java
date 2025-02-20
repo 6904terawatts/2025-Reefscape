@@ -1,7 +1,7 @@
 package frc.robot.controls.controllers;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.XboxController; // Importing XboxController
+import edu.wpi.first.wpilibj.XboxController;
 
 public class DriverController extends FilteredController {
   private String m_smartDashboardKey = "DriverInput/";
@@ -39,7 +39,11 @@ public class DriverController extends FilteredController {
   }
 
   public double getTurnAxis() {
-    return getRotationAxis(); // Use rotation for turning
+    return getRotationAxis();
+  }
+
+  public boolean getWantsRobotCentric() {
+    return this.getRawButton(8); // Use Xbox button Start for robot-centric mode
   }
 
   public boolean getWantsSpeedMode() {

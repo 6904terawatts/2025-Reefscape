@@ -23,9 +23,10 @@ public class SimulatableCANSparkMax extends SparkMax {
 
   @Override
   public REVLibError configure(SparkBaseConfig config, ResetMode resetMode, PersistMode persistMode) {
-      // return super.configure(config, resetMode, persistMode);
-      // Just throw away everything for now and say we're ok.
-      return REVLibError.kOk;
+    return super.configure(config, resetMode, persistMode);
+
+    // Just throw away everything for now and say we're ok.
+    // return REVLibError.kOk;
   }
 
   @Override

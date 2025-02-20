@@ -11,6 +11,8 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -21,9 +23,15 @@ public class Swerve extends Subsystem {
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
 
-    private Swerve() {
-        super("swerve");
+    private SwerveModuleState[] mDesiredStates = {
+        new SwerveModuleState(),
+        new SwerveModuleState(),
+        new SwerveModuleState(),
+        new SwerveModuleState()
+    };
 
+    public Swerve() {
+        super("swerve");
         gyro = new Pigeon2(Constants.Swerve.pigeonID);
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         gyro.setYaw(0);
@@ -59,10 +67,9 @@ public class Swerve extends Subsystem {
         }
     }    
 
-    /* Used by SwerveControllerCommand in Auto */
     public void setModuleStates(SwerveModuleState[] desiredStates) {
         SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, Constants.Swerve.maxSpeed);
-        
+        mDesiredStates = desiredStates;
         for(SwerveModule mod : mSwerveMods){
             mod.setDesiredState(desiredStates[mod.moduleNumber], false);
         }
@@ -114,6 +121,11 @@ public class Swerve extends Subsystem {
         }
     }
 
+    NetworkTableInstance ntInstance = NetworkTableInstance.getDefault();
+    StructArrayPublisher<SwerveModuleState> swerveStatePublisher = ntInstance.getStructArrayTopic("SwerveStates", SwerveModuleState.struct).publish();
+    StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = ntInstance.getStructArrayTopic("DesiredSwerveStates", SwerveModuleState.struct).publish();
+    StructArrayPublisher<SwerveModulePosition> swervePositionPublisher = ntInstance.getStructArrayTopic("SwervePositions", SwerveModulePosition.struct).publish();
+    
     @Override
     public void periodic(){
         swerveOdometry.update(getGyroYaw(), getModulePositions());
@@ -123,6 +135,10 @@ public class Swerve extends Subsystem {
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Angle", mod.getPosition().angle.getDegrees());
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Velocity", mod.getState().speedMetersPerSecond);    
         }
+        SmartDashboard.putNumber("pigeonYaw", getGyroYaw().getDegrees());
+        swerveStatePublisher.set(getModuleStates());
+        desiredSwerveStatePublisher.set(mDesiredStates);
+        swervePositionPublisher.set(getModulePositions());
     }
 
     public static Swerve mInstance;
@@ -132,31 +148,33 @@ public class Swerve extends Subsystem {
           mInstance = new Swerve();
         }
         return mInstance;
-      }
+    }
 
     @Override
     public void reset() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'reset'");
+        zeroHeading();
+        resetModulesToAbsolute();
     }
 
     @Override
     public void writePeriodicOutputs() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'writePeriodicOutputs'");
+        // No periodic outputs need to be written for swerve
     }
 
     @Override
     public void stop() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'stop'");
+        // Stop all swerve modules by setting their desired states to zero
+        SwerveModuleState[] stopStates = new SwerveModuleState[] {
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d())
+        };
+        setModuleStates(stopStates);
     }
 
     @Override
     public void outputTelemetry() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'outputTelemetry'");
+        // Output telemetry is handled in periodic()
     }
-
-    
 }

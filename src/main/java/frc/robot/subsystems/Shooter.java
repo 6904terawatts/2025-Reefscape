@@ -5,12 +5,13 @@ import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class Shooter extends Subsystem {
@@ -26,23 +27,24 @@ public class Shooter extends Subsystem {
     return mInstance;
   }
 
-  private SparkFlex mLeftShooterMotor;
-  private SparkFlex mRightShooterMotor;
+  private SparkMax mLeftShooterMotor;
+  private SparkMax mRightShooterMotor;
 
   private RelativeEncoder mLeftShooterEncoder;
   private RelativeEncoder mRightShooterEncoder;
 
   private SlewRateLimiter mSpeedLimiter = new SlewRateLimiter(1000);
 
+  @SuppressWarnings("deprecation")
   private Shooter() {
     super("Shooter");
 
     mPeriodicIO = new PeriodicIO();
 
-    mLeftShooterMotor = new SparkFlex(Constants.kShooterLeftMotorId, MotorType.kBrushless);
-    mRightShooterMotor = new SparkFlex(Constants.kShooterRightMotorId, MotorType.kBrushless);
+    mLeftShooterMotor = new SparkMax(Constants.kShooterLeftMotorId, MotorType.kBrushless);
+    mRightShooterMotor = new SparkMax(Constants.kShooterRightMotorId, MotorType.kBrushless);
 
-    var shooterConfig = new SparkFlexConfig()
+    var shooterConfig = new SparkMaxConfig()
         .idleMode(IdleMode.kCoast);
 
     shooterConfig.closedLoop
@@ -50,7 +52,7 @@ public class Shooter extends Subsystem {
         .minOutput(Constants.kShooterMinOutput)
         .maxOutput(Constants.kShooterMaxOutput);
 
-    var leftShooterConfig = new SparkFlexConfig()
+    var leftShooterConfig = new SparkMaxConfig()
         .apply(shooterConfig)
         .inverted(true);
 

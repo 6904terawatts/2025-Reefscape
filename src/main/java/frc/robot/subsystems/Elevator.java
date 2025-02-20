@@ -13,12 +13,10 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Timer;
-
-
 import frc.robot.Constants;
 import frc.robot.simulation.SimulatableCANSparkMax;
 
-public class Elevator extends Subsystem  {
+public class Elevator extends Subsystem {
 
   /*-------------------------------- Private instance variables ---------------------------------*/
   private static Elevator mInstance;
@@ -39,8 +37,6 @@ public class Elevator extends Subsystem  {
   private SparkClosedLoopController mLeftPIDController;
 
   private SimulatableCANSparkMax mRightMotor;
-  private RelativeEncoder mRightEncoder;
-  private SparkClosedLoopController mRightPIDController;
 
   private TrapezoidProfile mProfile;
   private TrapezoidProfile.State mCurState = new TrapezoidProfile.State();
@@ -56,13 +52,12 @@ public class Elevator extends Subsystem  {
 
     elevatorConfig.closedLoop
         .pid(Constants.Elevator.kP, Constants.Elevator.kI, Constants.Elevator.kD)
-        .iZone(Constants.Elevator.kIZone)
-        .minOutput(Constants.Elevator.kMaxPowerDown)
-        .maxOutput(Constants.Elevator.kMaxPowerUp);
+        .iZone(Constants.Elevator.kIZone);
 
     elevatorConfig.smartCurrentLimit(Constants.Elevator.kMaxCurrent);
 
     elevatorConfig.idleMode(IdleMode.kBrake);
+    elevatorConfig.limitSwitch.reverseLimitSwitchEnabled(true);
 
     // LEFT ELEVATOR MOTOR
     mLeftMotor = new SimulatableCANSparkMax(Constants.Elevator.kElevatorLeftMotorId, MotorType.kBrushless);
@@ -75,10 +70,8 @@ public class Elevator extends Subsystem  {
 
     // RIGHT ELEVATOR MOTOR
     mRightMotor = new SimulatableCANSparkMax(Constants.Elevator.kElevatorRightMotorId, MotorType.kBrushless);
-    mRightEncoder = mRightMotor.getEncoder();
-    mRightPIDController = mRightMotor.getClosedLoopController();
     mRightMotor.configure(
-        elevatorConfig.follow(mLeftMotor),
+        elevatorConfig.follow(mLeftMotor, true),
         ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
 
