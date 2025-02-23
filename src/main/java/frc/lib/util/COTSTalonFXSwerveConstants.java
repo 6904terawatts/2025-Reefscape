@@ -238,7 +238,7 @@ public class COTSTalonFXSwerveConstants {
                 /** 12.8 : 1 */
                 double angleGearRatio = (12.8 / 1.0);
         
-                double angleKP = 1.0;
+                double angleKP = 20.0;
                 double angleKI = 0.0;
                 double angleKD = 0.0;
         
@@ -254,7 +254,7 @@ public class COTSTalonFXSwerveConstants {
                 /** SDS MK4 - (6.75 : 1) */
                 public static final double L2 = (6.75 / 1.0);
                 /** SDS MK4 - (6.12 : 1) */
-                public static final double L3 = (6.12 / 1.0);
+                public static final double L3 = (5.357142857142857 / 1.0);
                 /** SDS MK4 - (5.14 : 1) */
                 public static final double L4 = (5.14 / 1.0);
             }

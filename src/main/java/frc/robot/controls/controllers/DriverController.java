@@ -23,15 +23,15 @@ public class DriverController extends FilteredController {
   private final int rotationAxis = XboxController.Axis.kRightX.value; // Right stick X-axis
 
   public double getTranslationAxis() {
-    return -this.getFilteredAxis(translationAxis); // Inverted for forward movement
+    return this.getRawAxis(translationAxis); // Inverted for forward movement
   }
 
   public double getStrafeAxis() {
-    return -this.getFilteredAxis(strafeAxis); // Inverted for right movement
+    return this.getRawAxis(strafeAxis); // Inverted for right movement
   }
 
   public double getRotationAxis() {
-    return -this.getFilteredAxis(rotationAxis); // Inverted for rotation
+    return this.getRawAxis(rotationAxis); // Inverted for rotation
   }
 
   public double getForwardAxis() {
