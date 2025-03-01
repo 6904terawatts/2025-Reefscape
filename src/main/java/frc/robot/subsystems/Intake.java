@@ -165,7 +165,7 @@ public class Intake extends Subsystem {
       case PULSE:
         // Use the timer to pulse the intake on for a 1/16 second,
         // then off for a 15/16 second
-        if (Timer.getFPGATimestamp() % 1.0 < (1.0 / 45.0)) {
+        if (Timer.getFPGATimestamp() % 1.0 < (1.0 / 50.0)) {
           return Constants.Intake.k_intakeSpeed;
         }
         return 0.0;

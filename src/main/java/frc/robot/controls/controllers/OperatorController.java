@@ -17,18 +17,17 @@ public class OperatorController extends FilteredController {
     return -this.getFilteredAxis(1); // Left stick Y-axis
   }
 
-  public boolean getWantsCoralIntake() {
-    return this.getRawButton(1); // Xbox button A
+  public boolean getLeftTrigger() {
+    return this.getFilteredAxis(2) > k_triggerActivationThreshold; // Left Trigger
   }
 
-  public boolean getWantsCoralReverse() {
-    return this.getRawButton(2); // Xbox button B
+  public boolean getWantsIntakeCoral() {
+    return this.getFilteredAxis(3) > k_triggerActivationThreshold; // Right trigger
   }
 
-  public boolean getWantsCoralIndex() {
-    return this.getRawButton(3); // Xbox button X
+  public boolean getRightTrigger() {
+    return this.getFilteredAxis(3) > k_triggerActivationThreshold; // Right trigger
   }
-
   public boolean getWantsCoralL1() {
     return this.getRawButton(4); // Xbox button Y
   }
@@ -37,23 +36,27 @@ public class OperatorController extends FilteredController {
     return this.getRawButton(5); // Xbox button LB
   }
 
-  public boolean getWantsElevatorReset() {
-    return this.getRawButton(6); // Xbox button RB
+   // ELEVATOR
+   public boolean getWantsElevatorReset() {
+    return this.getRawButton(7);
   }
 
   public boolean getWantsElevatorStow() {
-    return this.getHatDown(); // DPad down
+    return this.getRawButton(1);
   }
 
   public boolean getWantsElevatorL2() {
-    return this.getHatLeft(); // DPad left
+    return this.getRawButton(3);
   }
 
   public boolean getWantsElevatorL3() {
-    return this.getHatRight(); // DPad right
+    return this.getRawButton(2);
   }
 
   public boolean getWantsElevatorL4() {
-    return this.getHatUp(); // DPad up
+    return this.getRawButton(4);
+  }
+  public boolean getWantsCoralIntake() {
+    return this.getRawButton(6);
   }
 }

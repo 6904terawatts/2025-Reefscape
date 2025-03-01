@@ -44,6 +44,9 @@ public class Swerve extends Subsystem {
         };
 
         swerveOdometry = new SwerveDriveOdometry(Constants.Swerve.swerveKinematics, getGyroYaw(), getModulePositions());
+        
+        setName("SwerveSubsystem");
+        SmartDashboard.putData(this);
     }
 
     public void drive(Translation2d translation, double rotation, boolean fieldRelative, boolean isOpenLoop) {

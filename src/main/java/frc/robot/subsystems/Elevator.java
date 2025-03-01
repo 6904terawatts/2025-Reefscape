@@ -43,6 +43,7 @@ public class Elevator extends Subsystem {
   private TrapezoidProfile.State mGoalState = new TrapezoidProfile.State();
   private double prevUpdateTime = Timer.getFPGATimestamp();
 
+  @SuppressWarnings("deprecation")
   private Elevator() {
     super("Elevator");
 
@@ -64,6 +65,7 @@ public class Elevator extends Subsystem {
     mLeftEncoder = mLeftMotor.getEncoder();
     mLeftPIDController = mLeftMotor.getClosedLoopController();
     mLeftMotor.configure(
+
         elevatorConfig,
         ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
@@ -74,6 +76,7 @@ public class Elevator extends Subsystem {
         elevatorConfig.follow(mLeftMotor, true),
         ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
+        mRightMotor.setInverted(false);
 
     mProfile = new TrapezoidProfile(
         new TrapezoidProfile.Constraints(
@@ -127,7 +130,7 @@ public class Elevator extends Subsystem {
 
       // Set PID controller to new state
       mLeftPIDController.setReference(
-          mCurState.position,
+          -mCurState.position,
           SparkBase.ControlType.kPosition,
           ClosedLoopSlot.kSlot0,
           Constants.Elevator.kG,

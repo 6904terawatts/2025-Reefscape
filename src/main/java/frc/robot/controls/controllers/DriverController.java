@@ -43,60 +43,33 @@ public class DriverController extends FilteredController {
   }
 
   public boolean getWantsRobotCentric() {
-    return this.getRawButton(8); // Use Xbox button Start for robot-centric mode
+    return this.getRawButton(1); // Use Xbox button Start for robot-centric mode
   }
 
   public boolean getWantsSpeedMode() {
     return this.getFilteredAxis(2) > k_triggerActivationThreshold; // Right trigger
   }
 
-  public boolean getWantsStow() {
-    return this.getRawButton(1); // Xbox button A
-  }
-
-  public boolean getWantsL2() {
-    return this.getRawButton(2); // Xbox button B
-  }
-
-  public boolean getWantsL3() {
-    return this.getRawButton(3); // Xbox button X
-  }
-
-  public boolean getWantsL4() {
-    return this.getRawButton(4); // Xbox button Y
-  }
-
   public boolean getWantsScoreCoral() {
-    return this.getFilteredAxis(3) > k_triggerActivationThreshold; // Left trigger
+    return this.getFilteredAxis(2) > k_triggerActivationThreshold; // Left trigger
+  }
+
+  public boolean getLeftTrigger() {
+    return this.getFilteredAxis(2) > k_triggerActivationThreshold; // Left Trigger
   }
 
   public boolean getWantsIntakeCoral() {
-    return this.getFilteredAxis(2) > k_triggerActivationThreshold; // Right trigger
+    return this.getFilteredAxis(3) > k_triggerActivationThreshold; // Right trigger
   }
 
-  public boolean getWantsA1() {
-    return this.getHatDown(); // DPad down
+  public boolean getRightTrigger() {
+    return this.getFilteredAxis(3) > k_triggerActivationThreshold; // Right trigger
   }
+ 
 
-  public boolean getWantsA2() {
-    return this.getHatUp(); // DPad up
-  }
+  
 
-  public boolean getWantsStopAlgae() {
-    return this.getHatRight(); // DPad right
-  }
-
-  public boolean getWantsElevatorReset() {
-    return this.getRawButton(5); // Xbox button LB
-  }
-
-  public boolean getWantsEjectAlgae() {
-    return this.getRawButton(6); // Xbox button RB
-  }
-
-  public boolean getWantsGroundAlgae() {
-    return this.getRawButton(7); // Xbox button back
-  }
+ 
 
   public void outputTelemetry() {
     SmartDashboard.putNumber(m_smartDashboardKey + "Forward", getForwardAxis());

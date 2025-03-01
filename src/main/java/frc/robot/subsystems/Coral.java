@@ -72,6 +72,8 @@ public class Coral extends Subsystem {
     } catch (ConfigurationFailedException e) {
       System.out.println("Configuration failed! " + e);
     }
+
+    setName("CoralSubsystem");
   }
 
   private static class PeriodicIO {
@@ -96,7 +98,8 @@ public class Coral extends Subsystem {
 
   @Override
   public void writePeriodicOutputs() {
-    mLeftMotor.set(mPeriodicIO.rpm - mPeriodicIO.speed_diff);
+    //mLeftMotor.set(mPeriodicIO.rpm - mPeriodicIO.speed_diff);
+    mLeftMotor.set(mPeriodicIO.rpm);
     mRightMotor.set(-mPeriodicIO.rpm);
   }
 
@@ -130,7 +133,8 @@ public class Coral extends Subsystem {
   /*---------------------------------- Custom Public Functions ----------------------------------*/
 
   public boolean isHoldingCoralViaLaserCAN() {
-    return mPeriodicIO.measurement.distance_mm < 75.0;
+    return false;
+    //return mPeriodicIO.measurement.distance_mm < 75.0;
   }
 
   public void setSpeed(double rpm) {
