@@ -12,18 +12,17 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.Publisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.SwerveModule;
 
-public class Swerve extends SubsystemBase {
+public class Swerve extends Subsystem {
     public SwerveDriveOdometry swerveOdometry;
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
+
     private SwerveModuleState[] mDesiredStates = {
         new SwerveModuleState(),
         new SwerveModuleState(),
@@ -32,6 +31,7 @@ public class Swerve extends SubsystemBase {
     };
 
     public Swerve() {
+        super("swerve");
         gyro = new Pigeon2(Constants.Swerve.pigeonID);
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         gyro.setYaw(0);
@@ -44,6 +44,9 @@ public class Swerve extends SubsystemBase {
         };
 
         swerveOdometry = new SwerveDriveOdometry(Constants.Swerve.swerveKinematics, getGyroYaw(), getModulePositions());
+        
+        setName("SwerveSubsystem");
+        SmartDashboard.putData(this);
     }
 
     public void drive(Translation2d translation, double rotation, boolean fieldRelative, boolean isOpenLoop) {
@@ -67,7 +70,6 @@ public class Swerve extends SubsystemBase {
         }
     }    
 
-    /* Used by SwerveControllerCommand in Auto */
     public void setModuleStates(SwerveModuleState[] desiredStates) {
         SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, Constants.Swerve.maxSpeed);
         mDesiredStates = desiredStates;
@@ -140,5 +142,42 @@ public class Swerve extends SubsystemBase {
         swerveStatePublisher.set(getModuleStates());
         desiredSwerveStatePublisher.set(mDesiredStates);
         swervePositionPublisher.set(getModulePositions());
+    }
+
+    public static Swerve mInstance;
+
+    public static Swerve getInstance() {
+        if (mInstance == null) {
+          mInstance = new Swerve();
+        }
+        return mInstance;
+    }
+
+    @Override
+    public void reset() {
+        zeroHeading();
+        resetModulesToAbsolute();
+    }
+
+    @Override
+    public void writePeriodicOutputs() {
+        // No periodic outputs need to be written for swerve
+    }
+
+    @Override
+    public void stop() {
+        // Stop all swerve modules by setting their desired states to zero
+        SwerveModuleState[] stopStates = new SwerveModuleState[] {
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d()),
+            new SwerveModuleState(0, new Rotation2d())
+        };
+        setModuleStates(stopStates);
+    }
+
+    @Override
+    public void outputTelemetry() {
+        // Output telemetry is handled in periodic()
     }
 }
