@@ -16,6 +16,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import frc.robot.commands.AutoDriveForward;
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.subsystems.Swerve;
 import edu.wpi.first.cameraserver.CameraServer;
@@ -91,8 +92,6 @@ public class Robot extends LoggedRobot {
     setupLogging();
     CameraServer.startAutomaticCapture();
 
-
-
     // Add all subsystems to the list
     // m_allSubsystems.add(m_compressor);
     m_allSubsystems.add(m_drive);
@@ -122,21 +121,17 @@ public class Robot extends LoggedRobot {
 
     // Used by sysid
     if (this.isTestEnabled()) {
-      
-
-
-      
     }
   }
 
   @Override
   public void autonomousInit() {
-   
+    // Schedule the AutoDriveForward command with 2 second duration and 50% speed
+    CommandScheduler.getInstance().schedule(new AutoDriveForward(2.0, Constants.AutoConstants.kMaxSpeedMetersPerSecond * 0.5));
   }
 
   @Override
   public void autonomousPeriodic() {
-   //Swerve.drive()
   }
 
   @Override
@@ -230,7 +225,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void testPeriodic() {
- 
   };
 
   @Override
