@@ -22,7 +22,7 @@ public class Swerve extends Subsystem {
     public SwerveDriveOdometry swerveOdometry;
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
-
+    
     private SwerveModuleState[] mDesiredStates = {
         new SwerveModuleState(),
         new SwerveModuleState(),
@@ -119,6 +119,17 @@ public class Swerve extends Subsystem {
         for(SwerveModule mod : mSwerveMods){
             mod.resetToAbsolute();
         }
+    }
+
+    /**
+     * Initialize the robot heading and zero all swerve modules to their absolute offsets.
+     * This method reads the current gyro yaw angle and sets the odometry pose rotation accordingly,
+     * enabling field-relative driving based on the actual gyro angle at robot initialization.
+     */
+    public void initializeHeadingAndModules() {
+        Rotation2d currentGyroAngle = getGyroYaw();
+        swerveOdometry.resetPosition(currentGyroAngle, getModulePositions(), new Pose2d(getPose().getTranslation(), currentGyroAngle));
+        resetModulesToAbsolute();
     }
 
     NetworkTableInstance ntInstance = NetworkTableInstance.getDefault();
