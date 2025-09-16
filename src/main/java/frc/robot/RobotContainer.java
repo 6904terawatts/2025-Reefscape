@@ -8,25 +8,42 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.commands.*;
 import frc.robot.controls.controllers.DriverController;
+import frc.robot.controls.controllers.KeyboardController;
 import frc.robot.subsystems.*;
 
 public class RobotContainer {
     /* Controllers */
     private final DriverController m_driverController = new DriverController(0, false, false);
+    private final KeyboardController m_keyboardController = new KeyboardController();
 
     /* Subsystems */
     private final Swerve m_drive = Swerve.getInstance();
 
+    // Flag to select input source: true for keyboard, false for controller
+    private final boolean useKeyboardInput = true;
+
     public RobotContainer() {
-        m_drive.setDefaultCommand(
-            new TeleopSwerve(
-                m_drive,
-                m_driverController::getForwardAxis,
-                m_driverController::getStrafeAxis,
-                m_driverController::getTurnAxis,
-                m_driverController::getWantsRobotCentric
-            )
-        );
+        if (useKeyboardInput) {
+            m_drive.setDefaultCommand(
+                new TeleopSwerve(
+                    m_drive,
+                    m_keyboardController::getForwardAxis,
+                    m_keyboardController::getStrafeAxis,
+                    m_keyboardController::getTurnAxis,
+                    m_keyboardController::getWantsRobotCentric
+                )
+            );
+        } else {
+            m_drive.setDefaultCommand(
+                new TeleopSwerve(
+                    m_drive,
+                    m_driverController::getForwardAxis,
+                    m_driverController::getStrafeAxis,
+                    m_driverController::getTurnAxis,
+                    m_driverController::getWantsRobotCentric
+                )
+            );
+        }
 
         // Configure the button bindings
         configureButtonBindings();

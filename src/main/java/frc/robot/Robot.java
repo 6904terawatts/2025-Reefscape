@@ -14,6 +14,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import frc.robot.commands.TeleopSwerve;
 import frc.robot.subsystems.Swerve;
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -24,7 +25,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.autonomous.AutoRunner;
 import frc.robot.autonomous.tasks.Task;
 import frc.robot.controls.controllers.DriverController;
 import frc.robot.controls.controllers.OperatorController;
@@ -61,7 +61,7 @@ public class Robot extends LoggedRobot {
 
     public final LEDs m_leds = LEDs.getInstance();
     private Task m_currentTask;
-  private AutoRunner m_autoRunner = AutoRunner.getInstance();
+  // private AutoRunner m_autoRunner = AutoRunner.getInstance();
 
   // Simulation stuff
     private final Field m_field = Field.getInstance();
@@ -76,6 +76,7 @@ public class Robot extends LoggedRobot {
         TalonFX testMotor = new TalonFX(60, "TEST");
         Timer.delay(1);
         setupLogging();
+        CameraServer.startAutomaticCapture();
 
     // Add all subsystems to the list
     // m_allSubsystems.add(m_compressor);
@@ -90,6 +91,7 @@ public class Robot extends LoggedRobot {
         SmartDashboard.putData("Field", m_field);
 
         // Initialize subsystems
+        m_drive.initializeHeadingAndModules();
        
     }
 
@@ -113,33 +115,33 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
-      m_currentTask = m_autoRunner.getNextTask();
+      // m_currentTask = m_autoRunner.getNextTask();
 
-      // Start the first task
-      if (m_currentTask != null) {
-        m_currentTask.start();
-      }
+      // // Start the first task
+      // if (m_currentTask != null) {
+      //   m_currentTask.start();
+      // }
     }
 
     @Override
     public void autonomousPeriodic() {
        // If there is a current task, run it
-    if (m_currentTask != null) {
-      // Run the current task
-      m_currentTask.update();
+    // if (m_currentTask != null) {
+    //   // Run the current task
+    //   m_currentTask.update();
   
 
-      // If the current task is finished, get the next task
-      if (m_currentTask.isFinished()) {
-        m_currentTask.done();
-        m_currentTask = m_autoRunner.getNextTask();
+    //   // If the current task is finished, get the next task
+    //   if (m_currentTask.isFinished()) {
+    //     m_currentTask.done();
+    //     m_currentTask = m_autoRunner.getNextTask();
 
-        // Start the next task
-        if (m_currentTask != null) {
-          m_currentTask.start();
-        }
-      }
-    }
+    //     // Start the next task
+    //     if (m_currentTask != null) {
+    //       m_currentTask.start();
+    //     }
+    //   }
+    // }
     }
 
     @Override
@@ -148,13 +150,13 @@ public class Robot extends LoggedRobot {
     }
 
   double speed = 0;
-
+  boolean scorePressed = false;
     @Override
     public void teleopPeriodic() {
     // Get the x speed. We are inverting this because Xbox controllers return
     // negative values when we push forward.
     double maxSpeed = m_driverController.getWantsSpeedMode() ? Constants.Swerve.maxSpeed : Constants.Swerve.maxSpeed;
-  
+    double xSpeed = m_speedLimiter.calculate(m_driverController.getForwardAxis() * maxSpeed);
 
     // Get the rate of angular rotation. We are inverting this because we want a
     // positive value when we pull to the left (remember, CCW is positive in
@@ -163,49 +165,54 @@ public class Robot extends LoggedRobot {
 
     // m_drive.slowMode(m_driverController.getWantsSlowMode());
     // m_drive.speedMode(m_driverController.getWantsSpeedMode());
-   
+    double rot = m_rotLimiter.calculate(m_driverController.getTurnAxis() * Constants.Swerve.maxAngularVelocity);
 
     // FINAL CONTROLS
-    if (m_driverController.getWantsStow()) {
-      m_elevator.goToElevatorStow();
-      // m_algae.stow();
-    } else if (m_driverController.getWantsL2()) {
-      m_elevator.goToElevatorL2();
-      // m_algae.stow();
-    } else if (m_driverController.getWantsL3()) {
-      m_elevator.goToElevatorL3();
-      // m_algae.stow();
-    } else if (m_driverController.getWantsL4()) {
-      m_elevator.goToElevatorL4();
-      // m_algae.stow();
-    } else if (m_driverController.getWantsA1()) {
-      m_elevator.goToAlgaeLow();
-      // m_algae.grabAlgae();
-    } else if (m_driverController.getWantsA2()) {
-      m_elevator.goToAlgaeHigh();
-      // m_algae.grabAlgae();
-    } else if (m_driverController.getWantsStopAlgae()) {
-      // m_algae.stopAlgae();
-    } else if (m_driverController.getWantsEjectAlgae()) {
-      // m_algae.score();
-    } else if (m_driverController.getWantsGroundAlgae()) {
-      // m_algae.groundIntake();
-    }
-
-    if (m_driverController.getWantsScoreCoral()) {
-      if (m_elevator.getState() == Elevator.ElevatorState.STOW) {
-        m_coral.scoreL1();
-      } else {
-        m_coral.scoreL24();
+       // FINAL OPERATOR CONTROLS
+       if (m_operatorController.getWantsElevatorStow()) {
+        m_elevator.goToElevatorStow();
+        
+      } else if (m_operatorController.getWantsElevatorL2()) {
+        m_elevator.goToElevatorL2();
+        
+      } else if (m_operatorController.getWantsElevatorL3()) {
+        m_elevator.goToElevatorL3();
+       
+      } else if (m_operatorController.getWantsElevatorL4()) {
+        m_elevator.goToElevatorL4();
+       
+      } else if (m_operatorController.getWantsA1()) {
+        m_elevator.goToAlgaeLow();
+       
+      } else if (m_operatorController.getWantsA2()) {
+        m_elevator.goToAlgaeHigh();
+        
+      } else if (m_operatorController.getWantsStopAlgae()) {
+        
+       
+      } else if (m_operatorController.getWantsGroundAlgae()) {
+        
+      } else if (m_operatorController.getWantsCoralIntake()) {
+        m_coral.intake();
       }
-    } else if (m_driverController.getWantsIntakeCoral()) {
-      m_coral.intake();
-      m_elevator.goToElevatorStow();
-    }
+  
 
-    if (m_operatorController.getWantsElevatorReset() || m_driverController.getWantsElevatorReset()) {
-      m_elevator.reset();
-    }
+      if (m_driverController.getWantsScoreCoral()) {
+        scorePressed = true;
+  
+        if (m_elevator.getState() == Elevator.ElevatorState.STOW) {
+          m_coral.scoreL1();
+        } else {
+          m_coral.scoreL24();
+        }
+      } else if (scorePressed) {
+        scorePressed = false;
+  
+        m_elevator.goToElevatorStow();
+        m_coral.intake();
+      }
+
+   
   }
 
   @Override
